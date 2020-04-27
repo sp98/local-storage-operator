@@ -44,8 +44,6 @@ metadata:
               "maxSize": "100G",
               "minSize": "10G"
             },
-            "maxDeviceCount": 10,
-            "minDeviceCount": 5,
             "nodeSelector": {
               "nodeSelectorTerms": [
                 {

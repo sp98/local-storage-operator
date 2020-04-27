@@ -211,8 +211,9 @@ func newDiscoveryDaemonsetForCR(cr *localv1alpha1.LocalVolumeSet) *appsv1.Daemon
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: labels},
 				Spec: corev1.PodSpec{
-					Volumes:            volumes,
-					ServiceAccountName: "local-storage-operator", // TODO replace with common var
+					Volumes: volumes,
+					//ServiceAccountName: "local-storage-operator", // TODO replace with common var
+					ServiceAccountName: util.ProvisionerServiceAccount,
 					Containers: []corev1.Container{
 						{
 							Image: util.GetDiskMakerImage(),
@@ -370,7 +371,7 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 	}
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.ProvisionerServiceAccount,
+			Name:      util.ProvisionerServiceAccount,
 			Namespace: cr.Namespace,
 		},
 	}
@@ -390,7 +391,7 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 
 	provisionerClusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.ProvisionerNodeRoleName,
+			Name:      util.ProvisionerNodeRoleName,
 			Namespace: cr.Namespace,
 		},
 	}
@@ -417,7 +418,7 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 
 	pvClusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.ProvisionerPVRoleBindingName,
+			Name:      util.ProvisionerPVRoleBindingName,
 			Namespace: cr.Namespace,
 		},
 	}
@@ -449,7 +450,7 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 
 	nodeRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.ProvisionerNodeRoleBindingName,
+			Name:      util.ProvisionerNodeRoleBindingName,
 			Namespace: cr.Namespace,
 		},
 	}
@@ -481,7 +482,7 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 
 	localVolumeRole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.LocalVolumeRoleName,
+			Name:      util.LocalVolumeRoleName,
 			Namespace: cr.Namespace,
 		},
 	}
@@ -507,9 +508,8 @@ func (r *ReconcileLocalVolumeSet) syncRBACPolicies(cr *localv1alpha1.LocalVolume
 
 	localVolumeRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-" + util.LocalVolumeRoleBindingName,
+			Name:      util.LocalVolumeRoleBindingName,
 			Namespace: cr.Namespace,
-			Labels:    operatorLabel,
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(context.TODO(), r.client, localVolumeRoleBinding, func() error {
@@ -628,7 +628,7 @@ func (r *ReconcileLocalVolumeSet) generateLocalProvisionerDaemonset(cr *localv1a
 				},
 				Spec: corev1.PodSpec{
 					Containers:         containers,
-					ServiceAccountName: cr.Name + "-" + util.ProvisionerServiceAccount,
+					ServiceAccountName: util.ProvisionerServiceAccount,
 					Tolerations:        cr.Spec.Tolerations,
 					Volumes:            volumes,
 				},
