@@ -44,16 +44,17 @@ type BlockDevice struct {
 	Name   string `json:"name"`
 	KName  string `json:"kname"`
 	Type   string `json:"type"`
-	Model  string `json:"mode,omitempty"`
+	Model  string `json:"model,omitempty"`
 	Vendor string `json:"vendor,omitempty"`
 	State  string `json:"state,omitempty"`
-	FSType string `json:"fstype"`
+	FSType string `json:"fsType"`
 	Size   string `json:"size"`
 	// Children   []BlockDevice `json:"children,omitempty"`
 	Rotational string `json:"rota"`
 	ReadOnly   string `json:"ro,omitempty"`
 	Removable  string `json:"rm,omitempty"`
-	pathByID   string
+	PathByID   string `json:"pathByID,omitempty"`
+	Serial     string `json:"serial,omitempty"`
 }
 
 // IDPathNotFoundError indicates that a symlink to the device was not found in /dev/disk/by-id/
@@ -131,13 +132,13 @@ func (b BlockDevice) GetDevPath() (string, error) {
 func (b BlockDevice) GetPathByID() (string, error) {
 
 	// return if previously populated value is valid
-	if len(b.pathByID) > 0 && strings.HasPrefix(b.pathByID, DiskByIDDir) {
-		evalsCorrectly, err := PathEvalsToDiskLabel(b.pathByID, b.KName)
+	if len(b.PathByID) > 0 && strings.HasPrefix(b.PathByID, DiskByIDDir) {
+		evalsCorrectly, err := PathEvalsToDiskLabel(b.PathByID, b.Name)
 		if err == nil && evalsCorrectly {
-			return b.pathByID, nil
+			return b.PathByID, nil
 		}
 	}
-	b.pathByID = ""
+	b.PathByID = ""
 	diskByIDDir := filepath.Join(DiskByIDDir, "/*")
 	paths, err := filepath.Glob(diskByIDDir)
 	if err != nil {
@@ -149,7 +150,7 @@ func (b BlockDevice) GetPathByID() (string, error) {
 			return "", err
 		}
 		if isMatch {
-			b.pathByID = path
+			b.PathByID = path
 			return path, nil
 		}
 	}
@@ -181,7 +182,7 @@ func ListBlockDevices() ([]BlockDevice, []string, error) {
 	var output bytes.Buffer
 	var blockDevices []BlockDevice
 
-	columns := "NAME,ROTA,TYPE,SIZE,MODEL,VENDOR,RO,RM,STATE,FSTYPE,KNAME"
+	columns := "NAME,ROTA,TYPE,SIZE,MODEL,VENDOR,RO,RM,STATE,FSTYPE,KNAME,SERIAL"
 	args := []string{"--pairs", "-b", "-o", columns}
 	cmd := exec.Command("lsblk", args...)
 	cmd.Stdout = &output
