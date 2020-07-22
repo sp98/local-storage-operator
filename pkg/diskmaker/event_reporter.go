@@ -3,12 +3,13 @@ package diskmaker
 import (
 	"fmt"
 
-	localv1 "github.com/openshift/local-storage-operator/pkg/apis/local/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
+	// LocalVolume events
 	ErrorRunningBlockList    = "ErrorRunningBlockList"
 	ErrorReadingBlockList    = "ErrorReadingBlockList"
 	ErrorListingDeviceID     = "ErrorListingDeviceID"
@@ -16,6 +17,14 @@ const (
 	ErrorCreatingSymLink     = "ErrorCreatingSymLink"
 
 	FoundMatchingDisk = "FoundMatchingDisk"
+
+	// LocalVolumeDiscovery events
+	ErrorCreatingDiscoveryResultObject = "ErrorCreatingDiscoveryResultObject"
+	ErrorUpdatingDiscoveryResultObject = "ErrorUpdatingDiscoveryResultObject"
+	ErrorListingBlockDevices           = "ErrorListingBlockDevices"
+
+	CreatedDiscoveryResultObject = "CreatedDiscoveryResultObject"
+	UpdatedDiscoveredDeviceList  = "UpdatedDiscoveredDeviceList"
 )
 
 type DiskEvent struct {
@@ -25,32 +34,32 @@ type DiskEvent struct {
 	Message     string
 }
 
-func newEvent(eventReason, message, disk string) *DiskEvent {
+func NewEvent(eventReason, message, disk string) *DiskEvent {
 	return &DiskEvent{EventReason: eventReason, Disk: disk, Message: message, EventType: corev1.EventTypeWarning}
 }
 
-func newSuccessEvent(eventReason, message, disk string) *DiskEvent {
+func NewSuccessEvent(eventReason, message, disk string) *DiskEvent {
 	return &DiskEvent{EventReason: eventReason, Disk: disk, Message: message, EventType: corev1.EventTypeNormal}
 }
 
-type eventReporter struct {
-	apiClient      apiUpdater
+type EventReporter struct {
+	apiClient      ApiUpdater
 	reportedEvents sets.String
 }
 
-func newEventReporter(apiClient apiUpdater) *eventReporter {
-	er := &eventReporter{apiClient: apiClient}
+func NewEventReporter(apiClient ApiUpdater) *EventReporter {
+	er := &EventReporter{apiClient: apiClient}
 	er.reportedEvents = sets.NewString()
 	return er
 }
 
 // report function is not thread safe
-func (reporter *eventReporter) report(e *DiskEvent, lv *localv1.LocalVolume) {
+func (reporter *EventReporter) Report(e *DiskEvent, obj runtime.Object) {
 	eventKey := fmt.Sprintf("%s:%s:%s", e.EventReason, e.EventType, e.Disk)
 	if reporter.reportedEvents.Has(eventKey) {
 		return
 	}
 
-	reporter.apiClient.recordEvent(lv, e)
+	reporter.apiClient.recordEvent(obj, e)
 	reporter.reportedEvents.Insert(eventKey)
 }

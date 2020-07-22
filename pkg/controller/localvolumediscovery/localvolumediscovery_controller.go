@@ -29,11 +29,6 @@ const (
 	DiskMakerDiscovery = "diskmaker-discovery"
 )
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
-
 // Add creates a new LocalVolumeDiscovery Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -54,22 +49,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource LocalVolumeDiscovery
-	err = c.Watch(&source.Kind{Type: &localv1alpha1.LocalVolumeDiscovery{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner LocalVolumeDiscovery
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &localv1alpha1.LocalVolumeDiscovery{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.Watch(&source.Kind{Type: &localv1alpha1.LocalVolumeDiscovery{}}, &handler.EnqueueRequestForObject{})
 }
 
 // blank assignment to verify that ReconcileLocalVolumeDiscovery implements reconcile.Reconciler
