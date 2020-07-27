@@ -12,6 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	localv1alpha1 "github.com/openshift/local-storage-operator/pkg/apis/local/v1alpha1"
 	"github.com/openshift/local-storage-operator/pkg/controller/nodedaemon"
+	"github.com/openshift/local-storage-operator/pkg/diskmaker"
 	"github.com/openshift/local-storage-operator/pkg/internal"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -89,14 +90,16 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 	// list block devices
 	blockDevices, badRows, err := internal.ListBlockDevices()
 	if err != nil {
+		r.eventReporter.Report(lvset, newDiskEvent(diskmaker.ErrorRunningBlockList, "failed to list block devices", "", corev1.EventTypeWarning))
 		reqLogger.Error(err, "could not list block devices", "lsblk.BadRows", badRows)
 		return reconcile.Result{}, err
 	} else if len(badRows) > 0 {
+		r.eventReporter.Report(lvset, newDiskEvent(diskmaker.ErrorRunningBlockList, fmt.Sprintf("error parsing rows: %+v", badRows), "", corev1.EventTypeWarning))
 		reqLogger.Error(fmt.Errorf("bad rows"), "could not parse all the lsblk rows", "lsblk.BadRows", badRows)
 	}
 
 	// find disks that match lvset filters and matchers
-	validDevices := r.getValidDevices(reqLogger, lvset, blockDevices, symLinkDir)
+	validDevices := r.getValidDevices(reqLogger, lvset, blockDevices)
 
 	// process valid devices
 	var noMatch []string
@@ -107,6 +110,7 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 		var alreadyProvisionedCount int
 		alreadyProvisionedCount, noMatch, err = getAlreadyProvisioned(symLinkDir, validDevices)
 		if err != nil && lvset.Spec.MaxDeviceCount != nil {
+			r.eventReporter.Report(lvset, newDiskEvent(ErrorListingExistingSymlinks, "error determining already provisioned disks", "", corev1.EventTypeWarning))
 			return reconcile.Result{}, fmt.Errorf("could not determine how many devices are already provisioned: %w", err)
 		}
 		withinMax := true
@@ -118,15 +122,17 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 		}
 
 		devLogger.Info("symlinking")
+		r.eventReporter.Report(lvset, newDiskEvent(diskmaker.FoundMatchingDisk, "symlinking matching disk", blockDevice.KName, corev1.EventTypeNormal))
 		err = symLinkDisk(devLogger, blockDevice, symLinkDir)
 		if err != nil {
+			r.eventReporter.Report(lvset, newDiskEvent(diskmaker.ErrorCreatingSymLink, "symlinking failed", blockDevice.KName, corev1.EventTypeWarning))
 			return reconcile.Result{}, fmt.Errorf("could not symlink disk: %w", err)
 		}
 		devLogger.Info("symlinking succeeded")
 
 	}
 	if len(noMatch) > 0 {
-		reqLogger.Info("found stale symLink Entries", "storageClass.Name", storageClass, "paths.List", noMatch)
+		reqLogger.Info("found stale symLink Entries", "storageClass.Name", storageClass, "paths.List", noMatch, "directory", symLinkDir)
 	}
 
 	return reconcile.Result{Requeue: true, RequeueAfter: time.Minute}, nil
@@ -137,7 +143,6 @@ func (r *ReconcileLocalVolumeSet) getValidDevices(
 	reqLogger logr.Logger,
 	lvset *localv1alpha1.LocalVolumeSet,
 	blockDevices []internal.BlockDevice,
-	symlinkDir string,
 ) []internal.BlockDevice {
 	validDevices := make([]internal.BlockDevice, 0)
 	// get valid devices
