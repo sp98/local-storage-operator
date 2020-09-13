@@ -19,7 +19,9 @@ const (
 // DeviceStatus defines the observed state of the discovered devices
 type DeviceStatus struct {
 	// State shows the availability of the device
-	State DeviceState `json:"state"`
+	State            DeviceState `json:"state"`
+	PersistentVolume string      `json:"persistentvolume"`
+	StorageClass     string      `json:"storageclass"`
 }
 
 // DiscoveredDevice shows the list of discovered devices with their properties

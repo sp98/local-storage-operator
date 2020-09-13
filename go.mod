@@ -12,22 +12,21 @@ require (
 	github.com/openshift/library-go v0.0.0-20200314142707-3c25293448b0
 	github.com/openshift/sig-storage-local-static-provisioner v2.3.3-0.20200415071547-424ccbd206b3+incompatible
 	github.com/operator-framework/operator-sdk v0.16.0
-	github.com/pkg/errors v0.8.1
-	github.com/prometheus/common v0.7.0
-	github.com/spf13/cobra v0.0.5
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/common v0.9.1
+	github.com/rook/rook v1.4.2
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
-	golang.org/x/sys v0.0.0-20191028164358-195ce5e7f934
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/sys v0.0.0-20200122134326-e047566fdf82
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.0
 	k8s.io/apimachinery v0.18.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
-	k8s.io/kubernetes v1.16.2
+	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
+	k8s.io/kubernetes v1.17.2
 	sigs.k8s.io/controller-runtime v0.5.2
-	sigs.k8s.io/sig-storage-lib-external-provisioner v4.1.0+incompatible // indirect
 	sigs.k8s.io/sig-storage-local-static-provisioner v2.3.4+incompatible
 )
 

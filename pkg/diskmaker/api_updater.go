@@ -30,6 +30,7 @@ type ApiUpdater interface {
 	UpdateDiscoveryResultStatus(lvdr *v1alpha1.LocalVolumeDiscoveryResult) error
 	UpdateDiscoveryResult(lvdr *v1alpha1.LocalVolumeDiscoveryResult) error
 	GetLocalVolumeDiscovery(name, namespace string) (*v1alpha1.LocalVolumeDiscovery, error)
+	GetConfigMap(name, namespace string) (*v1.ConfigMap, error)
 }
 
 type sdkAPIUpdater struct {
@@ -120,4 +121,10 @@ func (s *sdkAPIUpdater) GetLocalVolumeDiscovery(name, namespace string) (*v1alph
 	discoveryCR := &v1alpha1.LocalVolumeDiscovery{}
 	err := s.client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, discoveryCR)
 	return discoveryCR, err
+}
+
+func (s *sdkAPIUpdater) GetConfigMap(name, namespace string) (*v1.ConfigMap, error) {
+	cm := &v1.ConfigMap{}
+	err := s.client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cm)
+	return cm, err
 }

@@ -3,6 +3,7 @@ package diskmaker
 import (
 	localv1 "github.com/openshift/local-storage-operator/pkg/apis/local/v1"
 	"github.com/openshift/local-storage-operator/pkg/apis/local/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,6 +15,7 @@ type MockAPIUpdater struct {
 	MockUpdateDiscoveryResultStatus func(lvdr *v1alpha1.LocalVolumeDiscoveryResult) error
 	MockUpdateDiscoveryResult       func(lvdr *v1alpha1.LocalVolumeDiscoveryResult) error
 	MockGetLocalVolumeDiscovery     func(name, namespace string) (*v1alpha1.LocalVolumeDiscovery, error)
+	MockGetConfigMap                func(name, namespace string) (*v1.ConfigMap, error)
 }
 
 var _ ApiUpdater = &MockAPIUpdater{}
@@ -69,4 +71,13 @@ func (f *MockAPIUpdater) GetLocalVolumeDiscovery(name, namespace string) (*v1alp
 	}
 
 	return &v1alpha1.LocalVolumeDiscovery{}, nil
+}
+
+// GetConfigMap mock MockGetConfigMap
+func (f *MockAPIUpdater) GetConfigMap(name, namespace string) (*v1.ConfigMap, error) {
+	if f.MockGetConfigMap != nil {
+		return f.MockGetConfigMap(name, namespace)
+	}
+
+	return &v1.ConfigMap{}, nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/local-storage-operator/pkg/diskmaker/controllers/lvset"
 	"github.com/openshift/local-storage-operator/pkg/internal"
 	"github.com/pkg/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
 )
@@ -22,7 +23,7 @@ import (
 const (
 	localVolumeDiscoveryComponent = "auto-discover-devices"
 	udevEventPeriod               = 5 * time.Second
-	probeInterval                 = 5 * time.Minute
+	probeInterval                 = 5 * time.Second
 	resultCRName                  = "discovery-result-%s"
 	resultCRLabel                 = "discovery-result-node"
 	biosBoot                      = "BIOS-BOOT"
@@ -120,6 +121,54 @@ func (discovery *DeviceDiscovery) discoverDevices() error {
 	discoveredDisks := getDiscoverdDevices(validDevices)
 	klog.Infof("discovered devices: %+v", discoveredDisks)
 
+	devicePVMap, err := discovery.getDevicePVMap()
+	if err != nil {
+		message := "failed to get device pv map"
+		e := diskmaker.NewEvent(diskmaker.ErrorListingBlockDevices, fmt.Sprintf("%s. Error: %+v", message, err), "")
+		discovery.eventSync.Report(e, discovery.localVolumeDiscovery)
+		return errors.Wrapf(err, message)
+	}
+
+	klog.Infof("DevicePVMap - %+v", devicePVMap)
+	if devicePVMap != nil {
+
+		for i, discoveredDisk := range discoveredDisks {
+			// get symlink for the discovereddisk
+			var devicePath string
+			if discoveredDisk.DeviceID != "" {
+				devicePath = discoveredDisk.DeviceID
+			} else if discoveredDisk.Path != "" {
+				devicePath = discoveredDisk.DeviceID
+			} else {
+				klog.Warningf("No valid device path found")
+			}
+
+			symlinks, err := internal.GetMatchingSymlinksInDirs(devicePath, "/mnt/local-storage/")
+			if err != nil {
+				klog.Errorf("error getting symlink directories for the device %q", discoveredDisk.Path)
+				continue
+			}
+
+			if len(symlinks) == 0 {
+				klog.Infof("No symlinks available for the device %q", discoveredDisk.Path)
+				continue
+			}
+
+			for _, symlink := range symlinks {
+				value := devicePVMap.GetDevicePVMap(os.Getenv("MY_NODE_NAME"), symlink)
+				if value == nil {
+					break
+				}
+				klog.Infof("device %s is provisioned with Persistence volume %q on storageClass %q", discoveredDisk.Path, value.PVName, value.StorageClassName)
+				discoveredDisks[i].Status.State = v1alpha1.NotAvailable
+				discoveredDisks[i].Status.PersistentVolume = value.PVName
+				discoveredDisks[i].Status.StorageClass = value.StorageClassName
+				break
+			}
+
+		}
+	}
+
 	// Update discovered devices in the  LocalVolumeDiscoveryResult resource
 	if !reflect.DeepEqual(discovery.disks, discoveredDisks) {
 		klog.Info("device list updated. Updating LocalVolumeDiscoveryResult status...")
@@ -137,6 +186,29 @@ func (discovery *DeviceDiscovery) discoverDevices() error {
 	}
 
 	return nil
+}
+
+func (discovery *DeviceDiscovery) getDevicePVMap() (*DiskPVMap, error) {
+	cm, err := discovery.apiClient.GetConfigMap(DevicePVConfigMapName, os.Getenv("WATCH_NAMESPACE"))
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			klog.Info("config map not found")
+			return nil, nil
+		}
+	}
+
+	if cm.Data["devicePvMapConfig"] == "" {
+		klog.Info("no device pv map info found")
+		return nil, nil
+	}
+
+	devicePVMap, err := ToDiskPVMapObj(cm.Data["devicePvMapConfig"])
+	if err != nil {
+		return nil, err
+	}
+
+	return devicePVMap, nil
+
 }
 
 // getValidBlockDevices fetchs all the block devices sutitable for discovery
