@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/local-storage-operator/pkg/common"
 	"github.com/openshift/local-storage-operator/pkg/diskmaker"
 	"github.com/openshift/local-storage-operator/pkg/internal"
+	"github.com/openshift/local-storage-operator/pkg/localmetrics"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -144,6 +145,7 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 
 	// process valid devices
 	var noMatch []string
+	totalProvisionedPVs := 0
 	for _, blockDevice := range validDevices {
 		devLogger := reqLogger.WithValues("Device.Name", blockDevice.Name)
 
@@ -194,9 +196,18 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 			r.eventReporter.Report(lvset, newDiskEvent(diskmaker.ErrorProvisioningDisk, "provisioning failed", blockDevice.KName, corev1.EventTypeWarning))
 			return reconcile.Result{}, fmt.Errorf("could not provision disk: %w", err)
 		}
+		totalProvisionedPVs = totalProvisionedPVs + 1
 		devLogger.Info("provisioning succeeded")
 
 	}
+
+	nodeName := os.Getenv("MY_NODE_NAME")
+	// update metrics for valid devices as provisioned PVs by local volume set
+	localmetrics.SetLVSProvisionedPVs(nodeName, storageClassName, totalProvisionedPVs)
+
+	// update metrics for unmatched devices
+	localmetrics.SetLVSUnmatchedDevices(nodeName, storageClassName, len(blockDevices)-totalProvisionedPVs)
+
 	if len(noMatch) > 0 {
 		reqLogger.Info("found stale symLink Entries", "storageClass.Name", storageClassName, "paths.List", noMatch, "directory", symLinkDir)
 	}
@@ -209,7 +220,46 @@ func (r *ReconcileLocalVolumeSet) Reconcile(request reconcile.Request) (reconcil
 		requeueTime = deviceMinAge / 2
 	}
 
+	orphanSymlinkDevices, err := getOrphanedSymlinks(symLinkDir, validDevices)
+	if err != nil {
+		reqLogger.Error(err, "failed to get orphaned symlink devices in current reconcile")
+	}
+
+	if len(orphanSymlinkDevices) > 0 {
+		reqLogger.Info("found orphan symlinked devices in current reconcile", "orphanedDevices", orphanSymlinkDevices)
+	}
+
+	// update metrics for orphaned symlink devices
+	localmetrics.SetLVSOrphanSymlinks(nodeName, storageClassName, len(orphanSymlinkDevices))
+
 	return reconcile.Result{Requeue: true, RequeueAfter: requeueTime}, nil
+}
+
+// getOrphanedSynlinks returns the devices that were symlinked previously, but didn't match the updated
+// lvset filter in the latest reconcile
+func getOrphanedSymlinks(synlinkDir string, validDevices []internal.BlockDevice) ([]string, error) {
+	orphanedSymlinkDevices := []string{}
+	paths, err := filepath.Glob(filepath.Join(synlinkDir, "/*"))
+	if err != nil {
+		return orphanedSymlinkDevices, nil
+	}
+
+PathLoop:
+	for _, path := range paths {
+		for i, device := range validDevices {
+			isMatch, err := internal.PathEvalsToDiskLabel(path, device.KName)
+			if err != nil {
+				return orphanedSymlinkDevices, nil
+			}
+			if isMatch {
+				continue PathLoop
+			} else if i == len(validDevices)-1 {
+				orphanedSymlinkDevices = append(orphanedSymlinkDevices, path)
+			}
+		}
+	}
+
+	return orphanedSymlinkDevices, nil
 }
 
 // runs filters and matchers on the blockDeviceList and returns valid devices

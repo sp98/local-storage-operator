@@ -16,13 +16,13 @@ spec:
       serviceAccountName: local-storage-operator
       containers:
         - name: local-storage-operator
-          image: quay.io/openshift/origin-local-storage-operator
+          image: quay.io/sp1098/lso
           ports:
           - containerPort: 60000
             name: metrics
           command:
           - local-storage-operator
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -37,4 +37,4 @@ spec:
             - name: PROVISIONER_IMAGE
               value: quay.io/openshift/origin-local-storage-static-provisioner
             - name: DISKMAKER_IMAGE
-              value: quay.io/openshift/origin-local-storage-diskmaker
+              value: quay.io/sp1098/local-diskmaker

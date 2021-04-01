@@ -208,7 +208,8 @@ func MutateAggregatedSpec(
 			SecurityContext: &corev1.SecurityContext{
 				Privileged: &privileged,
 			},
-			VolumeMounts: volumeMounts,
+			ImagePullPolicy: "IfNotPresent",
+			VolumeMounts:    volumeMounts,
 			Env: []corev1.EnvVar{
 				{
 					Name: "MY_NODE_NAME",

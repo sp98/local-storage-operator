@@ -10,14 +10,16 @@ require (
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
 	github.com/openshift/library-go v0.0.0-20200314142707-3c25293448b0
+	github.com/openshift/operator-custom-metrics v0.4.2
 	github.com/operator-framework/operator-sdk v0.16.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.2.1
 	github.com/prometheus/common v0.7.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
-	golang.org/x/sys v0.0.0-20191028164358-195ce5e7f934
-	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
+	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.0
 	k8s.io/apimachinery v0.18.0

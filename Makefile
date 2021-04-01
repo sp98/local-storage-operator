@@ -14,7 +14,7 @@ TARGET_DIR=$(CURPATH)/_output/bin
 IMAGE = $(REGISTRY)local-volume-provisioner:$(VERSION)
 MUTABLE_IMAGE = $(REGISTRY)local-volume-provisioner:$(VERSION)
 DISKMAKER_IMAGE = $(REGISTRY)local-diskmaker:$(VERSION)
-OPERATOR_IMAGE= $(REGISTRY)local-storage-operator:$(VERSION)
+OPERATOR_IMAGE= $(REGISTRY)lso:$(VERSION)
 MUST_GATHER_IMAGE = $(REGISTRY)local-must-gather:$(VERSION)
 REV=$(shell git describe --long --tags --match='v*' --dirty 2>/dev/null || git rev-list -n1 HEAD)
 

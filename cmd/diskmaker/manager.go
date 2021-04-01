@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/local-storage-operator/pkg/apis"
+	"github.com/openshift/local-storage-operator/pkg/localmetrics"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/prometheus/common/log"
@@ -17,6 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	diskmakerController "github.com/openshift/local-storage-operator/pkg/diskmaker/controllers"
+)
+
+const (
+	lvsSerivceName = "localmetrics-lvs"
 )
 
 func startManager(cmd *cobra.Command, args []string) error {
@@ -77,6 +82,9 @@ func startManager(cmd *cobra.Command, args []string) error {
 		log.Error(err, "failed to add to scheme")
 		return err
 	}
+
+	// configure local metrics for local volume discovery
+	localmetrics.ConfigureCustomMetrics(namespace, lvsSerivceName)
 
 	err = diskmakerController.AddToManager(mgr)
 	if err != nil {

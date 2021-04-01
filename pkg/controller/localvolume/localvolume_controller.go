@@ -477,6 +477,7 @@ func (r *ReconcileLocalVolume) generateLocalProvisionerDaemonset(cr *localv1.Loc
 			SecurityContext: &corev1.SecurityContext{
 				Privileged: &privileged,
 			},
+			ImagePullPolicy: "IfNotPresent",
 			Env: []corev1.EnvVar{
 				{
 					Name: "MY_NODE_NAME",
@@ -597,6 +598,7 @@ func (r *ReconcileLocalVolume) generateDiskMakerDaemonSet(cr *localv1.LocalVolum
 			SecurityContext: &corev1.SecurityContext{
 				Privileged: &privileged,
 			},
+			ImagePullPolicy: "IfNotPresent",
 			Env: []corev1.EnvVar{
 				{
 					Name: "MY_NODE_NAME",
