@@ -14,6 +14,8 @@ const (
 
 	udevVolName = "run-udev"
 	udevPath    = "/run/udev"
+
+	metricsServingCert = "metrics-serving-cert"
 )
 
 var (
@@ -92,5 +94,15 @@ var (
 		Name:             udevVolName,
 		MountPath:        udevPath,
 		MountPropagation: &hostContainerPropagation,
+	}
+
+	// MetricsCertVolume is the corev1.Volume definition for serving cert secret
+	MetricsCertVolume = corev1.Volume{
+		Name: metricsServingCert,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: "lso-metrics-serving-cert",
+			},
+		},
 	}
 )

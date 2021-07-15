@@ -298,6 +298,12 @@ spec:
           - create
           - patch
           - update
+        - apiGroups:
+          - "authentication.k8s.io"
+          resources:
+          - "tokenreviews"
+          verbs:
+          - "create"
         serviceAccountName: local-storage-admin
       deployments:
       - name: local-storage-operator
