@@ -222,10 +222,10 @@ all build: build-diskmaker build-operator
 .PHONY: all build
 
 build-diskmaker:
-	env GOOS=$(TARGET_GOOS) GOARCH=$(TARGET_GOARCH) go build -i -mod=vendor -a -i -ldflags '-X main.version=$(REV)' -o $(TARGET_DIR)/diskmaker $(CURPATH)/diskmaker_manager
+	env GOOS=$(TARGET_GOOS) GOARCH=$(TARGET_GOARCH) go build -mod=vendor -a -ldflags '-X main.version=$(REV)' -o $(TARGET_DIR)/diskmaker $(CURPATH)/diskmaker_manager
 
 build-operator:
-	env GOOS=$(TARGET_GOOS) GOARCH=$(TARGET_GOARCH) go build -i -mod=vendor -a -i -ldflags '-X main.version=$(REV)' -o $(TARGET_DIR)/local-storage-operator $(CURPATH)
+	env GOOS=$(TARGET_GOOS) GOARCH=$(TARGET_GOARCH) go build -mod=vendor -a -ldflags '-X main.version=$(REV)' -o $(TARGET_DIR)/local-storage-operator $(CURPATH)
 
 images: diskmaker-container operator-container must-gather
 
@@ -261,5 +261,3 @@ clean:
 test_e2e:
 	./hack/test-e2e.sh
 .PHONY: test
-
-
